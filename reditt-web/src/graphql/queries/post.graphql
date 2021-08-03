@@ -1,0 +1,6 @@
+query Posts{
+  Posts{
+    id
+    title
+  }
+}

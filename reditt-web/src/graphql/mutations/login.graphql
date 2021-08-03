@@ -1,0 +1,10 @@
+mutation Login($usernameoremail : String!,$password : String!){
+  Login(usernameoremail : $usernameoremail,password : $password){
+    user{
+      ...UserFrag
+    }
+    errors{
+      ...ErrorFrag
+    }
+  }
+}

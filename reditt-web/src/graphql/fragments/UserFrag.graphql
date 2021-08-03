@@ -1,0 +1,4 @@
+fragment UserFrag on User{
+    id,
+    username
+}
