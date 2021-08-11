@@ -10,12 +10,12 @@ import {
   Query,
 } from "type-graphql";
 import { hash, verify } from "argon2";
-import { EntityManager } from "@mikro-orm/postgresql";
 import { COOKIE_NAME, FORGOT_TOKEN_PREFIX } from "../const";
 import { UsernamePasswordInput } from "../utils/UsernamePasswordInput";
 import { validateRegister } from "../utils/validateRegister";
 import { sendMail } from "../utils/sendMail";
 import { v4 } from "uuid";
+import { getConnection } from "typeorm";
 
 @ObjectType()
 class FieldError {
@@ -41,8 +41,8 @@ export class UserResolver {
   async changePassword(
     @Arg("token") token: string,
     @Arg("newpassword") newpassword: string,
-    @Ctx() { em, redis ,req}: MyContext
-  ):Promise<UserResponse> {
+    @Ctx() { redis, req }: MyContext
+  ): Promise<UserResponse> {
     if (newpassword.length <= 3) {
       return {
         errors: [
@@ -54,7 +54,7 @@ export class UserResolver {
       };
     }
 
-    const key =  FORGOT_TOKEN_PREFIX + token;
+    const key = FORGOT_TOKEN_PREFIX + token;
 
     const userid = await redis.get(key);
 
@@ -69,7 +69,9 @@ export class UserResolver {
       };
     }
 
-    const user = await em.findOne(User, { id: parseFloat(userid) });
+    const userIdNum = parseFloat(userid);
+
+    const user = await User.findOne(userIdNum);
 
     if (!user) {
       return {
@@ -82,23 +84,22 @@ export class UserResolver {
       };
     }
 
-    user.password = await hash(newpassword);
-    em.persistAndFlush(user);
+    await User.update({ id: userIdNum }, { password: await hash(newpassword) });
 
     redis.del(key);
 
-    req.session.userID = user.id
+    req.session.userID = user.id;
 
     return { user };
   }
 
   @Query(() => User, { nullable: true })
-  async Me(@Ctx() { req, em }: MyContext) {
+  async Me(@Ctx() { req }: MyContext) {
     console.log(req.session.userID);
     if (!req.session.userID) {
       return null;
     }
-    const user = await em.findOne(User, { id: req.session.userID });
+    const user = await User.findOne(req.session.userID);
     console.log(user);
     return user;
   }
@@ -106,9 +107,9 @@ export class UserResolver {
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg("email") email: string,
-    @Ctx() { redis, em }: MyContext
+    @Ctx() { redis }: MyContext
   ) {
-    const user = await em.findOne(User, { email: email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return true;
     }
@@ -130,7 +131,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: UsernamePasswordInput,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     const errors = validateRegister(options);
     if (errors) {
@@ -143,19 +144,20 @@ export class UserResolver {
 
     let user;
     try {
-      const res = await (em as EntityManager)
-        .createQueryBuilder(User)
-        .getKnexQuery()
-        .insert({
+      const res = await getConnection()
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
           email: options.email,
           username: options.username,
           password: hashedPassword,
-          created_at: new Date(),
-          updated_at: new Date(),
         })
-        .returning("*");
+        .returning("*")
+        .execute();
 
-      user = res[0];
+      console.log(res);
+      user = res.raw[0];
     } catch (err) {
       if (err.code == "23505") {
         return {
@@ -177,13 +179,12 @@ export class UserResolver {
   async Login(
     @Arg("usernameoremail") usernameoremail: string,
     @Arg("password") password: string,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(
-      User,
+    const user = await User.findOne(
       usernameoremail.includes("@")
-        ? { email: usernameoremail }
-        : { username: usernameoremail }
+        ? { where :{email: usernameoremail }}
+        : { where : { username: usernameoremail} }
     );
     console.log(user);
 

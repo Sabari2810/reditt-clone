@@ -1,6 +1,5 @@
-import { MikroORM } from "@mikro-orm/core";
+import 'reflect-metadata';
 import { COOKIE_NAME, _prod_ } from "./const";
-import mikroOrmConfig from "./mikro-orm.config";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
@@ -11,16 +10,29 @@ import {
   ApolloServerPluginLandingPageGraphQLPlayground
 } from "apollo-server-core";
 
+
 // import redis from "redis";
 import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
-import { MyContext } from "./types";
 import cors from 'cors';       
-
+import { createConnection,} from "typeorm";
+import { User } from "./entities/User";
+import { Post } from "./entities/Post";
+import path from 'path';
 const main = async () => {
-  const orm = await MikroORM.init(mikroOrmConfig);
-  await orm.getMigrator().up();
+  const conn = await createConnection({
+    type:"postgres",
+    database : "redittclone2",
+    username : "postgres",
+    password : "postgresql",
+    synchronize : true,
+    migrations : [path.join(__dirname,"./migrations/*")],
+    logging : true,
+    entities : [User,Post],
+  });
+
+  await conn.runMigrations();
 
   const app = express();
 
@@ -29,9 +41,6 @@ const main = async () => {
   const RedisStore = connectRedis(session);
   const redis = new Redis()
 
-  // redisClient.on("error", (err) => {
-  //   console.log("Redis error: ", err);
-  // });
 
   app.use(cors({
     origin :"http://localhost:3000",
@@ -65,8 +74,7 @@ const main = async () => {
       resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
     }),
-    context: ({ req, res }) : MyContext => ({
-      em: orm.em,
+    context: ({ req, res }) => ({
       req: req,
       res: res,
       redis:redis

@@ -8,8 +8,8 @@ import { toErrorMap } from "../utils/toErrorMap";
 import { useRouter } from "next/router";
 import { withUrqlClient } from "next-urql";
 import { createUrqlClient } from "../utils/withUrqlClient";
-import NextLink from 'next/link';
-
+import NextLink from "next/link";
+import { route } from "next/dist/next-server/server/router";
 
 const Login = ({}) => {
   const router = useRouter();
@@ -26,7 +26,11 @@ const Login = ({}) => {
           }
 
           if (response.data?.Login.user) {
-            router.push("/");
+            if (typeof router.query.next === "string") {
+              router.push(router.query.next);
+            } else {
+              router.push("/");
+            }
           }
         }}
       >
@@ -45,10 +49,8 @@ const Login = ({}) => {
               type="password"
             />
             <Flex>
-              <NextLink href='/forgot-password'>
-                <Link ml={"auto"}>
-                  forgot password?
-                </Link>
+              <NextLink href="/forgot-password">
+                <Link ml={"auto"}>forgot password?</Link>
               </NextLink>
             </Flex>
             <Button type="submit" isLoading={isSubmitting} colorScheme="teal">

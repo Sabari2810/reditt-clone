@@ -3,9 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = require("@mikro-orm/core");
+require("reflect-metadata");
 const const_1 = require("./const");
-const mikro_orm_config_1 = __importDefault(require("./mikro-orm.config"));
 const express_1 = __importDefault(require("express"));
 const apollo_server_express_1 = require("apollo-server-express");
 const type_graphql_1 = require("type-graphql");
@@ -17,9 +16,22 @@ const ioredis_1 = __importDefault(require("ioredis"));
 const express_session_1 = __importDefault(require("express-session"));
 const connect_redis_1 = __importDefault(require("connect-redis"));
 const cors_1 = __importDefault(require("cors"));
+const typeorm_1 = require("typeorm");
+const User_1 = require("./entities/User");
+const Post_1 = require("./entities/Post");
+const path_1 = __importDefault(require("path"));
 const main = async () => {
-    const orm = await core_1.MikroORM.init(mikro_orm_config_1.default);
-    await orm.getMigrator().up();
+    const conn = await typeorm_1.createConnection({
+        type: "postgres",
+        database: "redittclone2",
+        username: "postgres",
+        password: "postgresql",
+        synchronize: true,
+        migrations: [path_1.default.join(__dirname, "./migrations/*")],
+        logging: true,
+        entities: [User_1.User, Post_1.Post],
+    });
+    await conn.runMigrations();
     const app = express_1.default();
     app.set("trust proxy", 1);
     const RedisStore = connect_redis_1.default(express_session_1.default);
@@ -53,7 +65,6 @@ const main = async () => {
             validate: false,
         }),
         context: ({ req, res }) => ({
-            em: orm.em,
             req: req,
             res: res,
             redis: redis

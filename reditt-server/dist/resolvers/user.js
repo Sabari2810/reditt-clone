@@ -21,6 +21,7 @@ const UsernamePasswordInput_1 = require("../utils/UsernamePasswordInput");
 const validateRegister_1 = require("../utils/validateRegister");
 const sendMail_1 = require("../utils/sendMail");
 const uuid_1 = require("uuid");
+const typeorm_1 = require("typeorm");
 let FieldError = class FieldError {
 };
 __decorate([
@@ -48,7 +49,7 @@ UserResponse = __decorate([
     type_graphql_1.ObjectType()
 ], UserResponse);
 let UserResolver = class UserResolver {
-    async changePassword(token, newpassword, { em, redis, req }) {
+    async changePassword(token, newpassword, { redis, req }) {
         if (newpassword.length <= 3) {
             return {
                 errors: [
@@ -71,7 +72,8 @@ let UserResolver = class UserResolver {
                 ],
             };
         }
-        const user = await em.findOne(User_1.User, { id: parseFloat(userid) });
+        const userIdNum = parseFloat(userid);
+        const user = await User_1.User.findOne(userIdNum);
         if (!user) {
             return {
                 errors: [
@@ -82,23 +84,22 @@ let UserResolver = class UserResolver {
                 ],
             };
         }
-        user.password = await argon2_1.hash(newpassword);
-        em.persistAndFlush(user);
+        await User_1.User.update({ id: userIdNum }, { password: await argon2_1.hash(newpassword) });
         redis.del(key);
         req.session.userID = user.id;
         return { user };
     }
-    async Me({ req, em }) {
+    async Me({ req }) {
         console.log(req.session.userID);
         if (!req.session.userID) {
             return null;
         }
-        const user = await em.findOne(User_1.User, { id: req.session.userID });
+        const user = await User_1.User.findOne(req.session.userID);
         console.log(user);
         return user;
     }
-    async forgotPassword(email, { redis, em }) {
-        const user = await em.findOne(User_1.User, { email: email });
+    async forgotPassword(email, { redis }) {
+        const user = await User_1.User.findOne({ where: { email } });
         if (!user) {
             return true;
         }
@@ -108,7 +109,7 @@ let UserResolver = class UserResolver {
         await sendMail_1.sendMail(email, body);
         return true;
     }
-    async register(options, { em, req }) {
+    async register(options, { req }) {
         const errors = validateRegister_1.validateRegister(options);
         if (errors) {
             return {
@@ -118,18 +119,19 @@ let UserResolver = class UserResolver {
         const hashedPassword = await argon2_1.hash(options.password);
         let user;
         try {
-            const res = await em
-                .createQueryBuilder(User_1.User)
-                .getKnexQuery()
-                .insert({
+            const res = await typeorm_1.getConnection()
+                .createQueryBuilder()
+                .insert()
+                .into(User_1.User)
+                .values({
                 email: options.email,
                 username: options.username,
                 password: hashedPassword,
-                created_at: new Date(),
-                updated_at: new Date(),
             })
-                .returning("*");
-            user = res[0];
+                .returning("*")
+                .execute();
+            console.log(res);
+            user = res.raw[0];
         }
         catch (err) {
             if (err.code == "23505") {
@@ -146,10 +148,10 @@ let UserResolver = class UserResolver {
         req.session.userID = user.id;
         return { user };
     }
-    async Login(usernameoremail, password, { em, req }) {
-        const user = await em.findOne(User_1.User, usernameoremail.includes("@")
-            ? { email: usernameoremail }
-            : { username: usernameoremail });
+    async Login(usernameoremail, password, { req }) {
+        const user = await User_1.User.findOne(usernameoremail.includes("@")
+            ? { where: { email: usernameoremail } }
+            : { where: { username: usernameoremail } });
         console.log(user);
         if (!user) {
             return {
