@@ -1,16 +1,19 @@
-query Posts($limit : Int!,$cursor : String){
-  Posts(
-    limit : $limit,
-    cursor : $cursor
-  ){
+query Posts($limit: Int!, $cursor: String) {
+  Posts(limit: $limit, cursor: $cursor) {
     hasMorePost
     posts {
       id
       title
       text
+      points
       creatorId
       createdAt
       textSnippet
+      voteStatus
+      creator {
+        id
+        username
+      }
     }
   }
 }

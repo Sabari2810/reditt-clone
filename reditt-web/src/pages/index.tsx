@@ -1,23 +1,19 @@
 import {
-  Stack,
-  Text,
-  Heading,
-  Box,
-  Flex,
-  Link,
-  Button,
+  Box, Button, Flex, Heading, Link, Stack,
+  Text
 } from "@chakra-ui/react";
 import { withUrqlClient } from "next-urql";
+import NextLink from "next/link";
 import React, { useState } from "react";
 import { Layout } from "../components/Layout";
+import Updoot from "../components/Updoot";
 import { usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/withUrqlClient";
-import NextLink from "next/link";
 
 const Index = () => {
   const [variables, setVariables] = useState({
     limit: 10,
-    cursor: null as null | string,
+    cursor: "" as null | string,
   });
   const [{ data, fetching }] = usePostsQuery({ variables });
 
@@ -39,10 +35,14 @@ const Index = () => {
       ) : (
         <Stack spacing={8}>
           {data?.Posts.posts.map((p) => (
-            <Box p={5} key={p.id} shadow="md" borderWidth="1px">
-              <Heading fontSize="l">{p.title}</Heading>
-              <Text mt={4}>{p.textSnippet}</Text>
-            </Box>
+            <Flex p={5} key={p.id} shadow="md" borderWidth="1px">
+              <Updoot post={p} />
+              <Box>
+                <Heading fontSize="l">{p.title}</Heading>
+                <Text>posted by {p.creator.username}</Text>
+                <Text mt={4}>{p.textSnippet}</Text>
+              </Box>
+            </Flex>
           ))}
         </Stack>
       )}
@@ -63,11 +63,13 @@ const Index = () => {
             Load More...
           </Button>
         ) : (
-          <Box m="auto" my="8">"Your'e done mate..."</Box>
+          <Box m="auto" my="8">
+            "Your'e done mate..."
+          </Box>
         )}
       </Flex>
     </Layout>
   );
 };
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Index);
+export default withUrqlClient(createUrqlClient, { ssr: false })(Index);

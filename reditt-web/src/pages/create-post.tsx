@@ -23,7 +23,6 @@ const CreatePost: React.FC<{}> = ({}) => {
         onSubmit={async (values) => {
           console.log(values);
           const { error } = await createPost({ options: values });
-          console.log(error);
           if (!error) {
             router.push("/");
           }
