@@ -1,6 +1,6 @@
 import {MigrationInterface, QueryRunner} from "typeorm";
 
-export class MockPost1628696691125 implements MigrationInterface {
+export class MockPost1628696691126 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         queryRunner.query(`
@@ -306,7 +306,7 @@ insert into post (title, text, "creatorId", "createdAt") values ('Mortadelo & Fi
         `);
     }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
+    public async down(_: QueryRunner): Promise<void> {
     }
 
 }

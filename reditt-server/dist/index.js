@@ -3,23 +3,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-require("reflect-metadata");
-const const_1 = require("./const");
-const express_1 = __importDefault(require("express"));
+const apollo_server_core_1 = require("apollo-server-core");
 const apollo_server_express_1 = require("apollo-server-express");
+const connect_redis_1 = __importDefault(require("connect-redis"));
+const cors_1 = __importDefault(require("cors"));
+const express_1 = __importDefault(require("express"));
+const express_session_1 = __importDefault(require("express-session"));
+const ioredis_1 = __importDefault(require("ioredis"));
+const path_1 = __importDefault(require("path"));
+require("reflect-metadata");
 const type_graphql_1 = require("type-graphql");
+const typeorm_1 = require("typeorm");
+const const_1 = require("./const");
+const Post_1 = require("./entities/Post");
+const Updoot_1 = require("./entities/Updoot");
+const User_1 = require("./entities/User");
 const hello_1 = require("./resolvers/hello");
 const post_1 = require("./resolvers/post");
 const user_1 = require("./resolvers/user");
-const apollo_server_core_1 = require("apollo-server-core");
-const ioredis_1 = __importDefault(require("ioredis"));
-const express_session_1 = __importDefault(require("express-session"));
-const connect_redis_1 = __importDefault(require("connect-redis"));
-const cors_1 = __importDefault(require("cors"));
-const typeorm_1 = require("typeorm");
-const User_1 = require("./entities/User");
-const Post_1 = require("./entities/Post");
-const path_1 = __importDefault(require("path"));
+const createUpdootLoader_1 = require("./utils/createUpdootLoader");
+const createUserLoader_1 = require("./utils/createUserLoader");
 const main = async () => {
     const conn = await typeorm_1.createConnection({
         type: "postgres",
@@ -29,7 +32,7 @@ const main = async () => {
         synchronize: true,
         migrations: [path_1.default.join(__dirname, "./migrations/*")],
         logging: true,
-        entities: [User_1.User, Post_1.Post],
+        entities: [User_1.User, Post_1.Post, Updoot_1.Updoot],
     });
     await conn.runMigrations();
     const app = express_1.default();
@@ -67,7 +70,9 @@ const main = async () => {
         context: ({ req, res }) => ({
             req: req,
             res: res,
-            redis: redis
+            redis: redis,
+            userLoader: createUserLoader_1.createUserLoader(),
+            updootLoader: createUpdootLoader_1.createUpdootLoader()
         }),
     });
     await apolloServer.start();

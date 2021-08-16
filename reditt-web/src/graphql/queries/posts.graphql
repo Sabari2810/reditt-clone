@@ -1,0 +1,8 @@
+query Posts($limit: Int!, $cursor: String) {
+  Posts(limit: $limit, cursor: $cursor) {
+    hasMorePost
+    posts {
+      ...PostFragment
+    }
+  }
+}

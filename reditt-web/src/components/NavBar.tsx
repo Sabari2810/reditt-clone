@@ -1,15 +1,17 @@
-import { Box, Button, Flex, Link } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, Link } from "@chakra-ui/react";
 import React from "react";
 import NavLink from "next/link";
 import { useLogoutMutation, useMeQuery } from "../generated/graphql";
 import { isServer } from "../utils/isServer";
+import { useRouter } from "next/router";
 
 interface NavBarProps {}
 
 export const NavBar: React.FC<NavBarProps> = ({}) => {
   const [{ fetching: logoutfetching }, logout] = useLogoutMutation();
+  const router = useRouter();
   const [{ data, fetching }] = useMeQuery({
-    pause : isServer()
+    pause: isServer(),
   });
   let body = null;
 
@@ -31,14 +33,20 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     body = (
       <>
         <Box color="white">
+          <NavLink href="/create-post">
+            <Button as={Link} mr={4}>
+              <Link color="black">Create Post</Link>
+            </Button>
+          </NavLink>
           {data.Me.username}
           <Button
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
+              router.reload();
             }}
             isLoading={logoutfetching}
             ml={4}
-            variant="outline"
+            variant="link"
           >
             Logout
           </Button>
@@ -48,7 +56,14 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
   }
   return (
     <Flex zIndex={2} position="sticky" top={0} padding={4} bgColor="tan">
-      <Box ml={"auto"}>{body}</Box>
+      <Flex flex={1} maxW={800} margin="auto">
+        <NavLink href="/">
+          <Link>
+            <Heading>Reditt Clone</Heading>
+          </Link>
+        </NavLink>
+        <Box ml="auto">{body}</Box>
+      </Flex>
     </Flex>
   );
 };

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MockPost1628696691125 = void 0;
-class MockPost1628696691125 {
+exports.MockPost1628696691126 = void 0;
+class MockPost1628696691126 {
     async up(queryRunner) {
         queryRunner.query(`
 
@@ -305,8 +305,8 @@ insert into post (title, text, "creatorId", "createdAt") values ('One Night Stan
 insert into post (title, text, "creatorId", "createdAt") values ('Mortadelo & Filemon: The Big Adventure (La gran aventura de Mortadelo y Filemón)', 'Duis bibendum. Morbi non quam nec dui luctus rutrum. Nulla tellus.', 1, '2021-01-17T20:22:58Z');
         `);
     }
-    async down(queryRunner) {
+    async down(_) {
     }
 }
-exports.MockPost1628696691125 = MockPost1628696691125;
+exports.MockPost1628696691126 = MockPost1628696691126;
 //# sourceMappingURL=1628696691125-MockPost.js.map
